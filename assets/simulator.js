@@ -289,7 +289,7 @@
       if (message) {
         message.classList.remove("hidden");
         const detail = error instanceof Error ? error.message : "알 수 없는 오류";
-        message.textContent = `실행 실패: ${detail}. 현재 API 기준 주소 ${apiBaseLabel()}.`;
+        message.textContent = `실행 실패: ${detail}. 현재 API 기준 주소 ${apiBaseLabel()}. 서버 배포 시 /api/simulate 와 SAM_API_KEY 설정을 확인하세요.`;
       }
     } finally {
       if (submitButton) submitButton.disabled = false;
