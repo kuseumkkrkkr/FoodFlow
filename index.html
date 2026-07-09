@@ -1,0 +1,1212 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#8aa5ba" />
+    <title>FoodFlow | 식품 제조 발주 준비 중</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Gothic+A1:wght@500;700;800;900&family=Noto+Sans+KR:wght@400;500;700;800;900&display=swap");
+
+      :root {
+        color-scheme: light;
+        --ink: #ffffff;
+        --ink-soft: rgba(255, 255, 255, 0.82);
+        --dark: #132235;
+        --dark-2: #24374d;
+        --line: rgba(255, 255, 255, 0.34);
+        --line-soft: rgba(255, 255, 255, 0.18);
+        --glass: rgba(255, 255, 255, 0.18);
+        --glass-strong: rgba(255, 255, 255, 0.28);
+        --button: #182b4c;
+        --button-2: #ffffff;
+        --accent: #ff7f73;
+        --success: #178a5b;
+        --warn: #9a6a00;
+        --danger: #b42318;
+        --shadow: 0 24px 80px rgba(22, 35, 54, 0.28);
+        --radius: 8px;
+        --radius-lg: 18px;
+        --max: 1180px;
+        --font: "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
+        --display: "Gothic A1", "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        min-width: 320px;
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: var(--ink);
+        background:
+          linear-gradient(180deg, rgba(30, 53, 82, 0.12), rgba(13, 25, 40, 0.48)),
+          radial-gradient(ellipse at 28% 60%, rgba(255, 255, 255, 0.9) 0 13%, rgba(255, 255, 255, 0.52) 21%, transparent 42%),
+          radial-gradient(ellipse at 63% 64%, rgba(255, 255, 255, 0.82) 0 18%, rgba(255, 255, 255, 0.42) 30%, transparent 52%),
+          radial-gradient(ellipse at 86% 58%, rgba(255, 255, 255, 0.76) 0 12%, rgba(255, 255, 255, 0.4) 24%, transparent 45%),
+          linear-gradient(145deg, #6c87a5 0%, #b4ccd6 47%, #e3e7df 100%);
+        background-attachment: fixed;
+        font-family: var(--font);
+        font-size: 16px;
+        line-height: 1.65;
+        letter-spacing: 0;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background:
+          linear-gradient(180deg, rgba(4, 13, 26, 0.28), transparent 46%, rgba(4, 13, 26, 0.22)),
+          radial-gradient(circle at 50% 34%, transparent 0 28%, rgba(255, 255, 255, 0.1) 29%, transparent 32%);
+        z-index: -1;
+      }
+
+      @keyframes appbarDrop {
+        from {
+          opacity: 0;
+          transform: translateY(-18px);
+        }
+
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes heroRise {
+        from {
+          opacity: 0;
+          transform: translate3d(0, 24px, 0);
+          filter: blur(10px);
+        }
+
+        to {
+          opacity: 1;
+          transform: translate3d(0, 0, 0);
+          filter: blur(0);
+        }
+      }
+
+      @keyframes titleIn {
+        from {
+          opacity: 0;
+          transform: translate3d(0, 28px, 0) scale(0.96);
+          letter-spacing: -0.13em;
+          filter: blur(8px);
+        }
+
+        to {
+          opacity: 1;
+          transform: translate3d(0, 0, 0) scale(1);
+          letter-spacing: -0.075em;
+          filter: blur(0);
+        }
+      }
+
+      @keyframes lineReveal {
+        from {
+          transform: scaleX(0);
+          opacity: 0;
+        }
+
+        to {
+          transform: scaleX(1);
+          opacity: 1;
+        }
+      }
+
+      @keyframes cloudDrift {
+        from {
+          transform: translate3d(-18px, 8px, 0) scale(0.98);
+        }
+
+        to {
+          transform: translate3d(24px, -16px, 0) scale(1.04);
+        }
+      }
+
+      @keyframes softPulse {
+        0%,
+        100% {
+          opacity: 0.22;
+          transform: scale(0.96);
+        }
+
+        50% {
+          opacity: 0.38;
+          transform: scale(1.04);
+        }
+      }
+
+      @keyframes panelFade {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes resultGlow {
+        0% {
+          box-shadow: var(--shadow);
+        }
+
+        45% {
+          box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.52), 0 24px 90px rgba(255, 255, 255, 0.22);
+        }
+
+        100% {
+          box-shadow: var(--shadow);
+        }
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        font-family: var(--display);
+        font-size: clamp(78px, 12vw, 156px);
+        line-height: 0.92;
+        letter-spacing: -0.075em;
+        font-weight: 900;
+      }
+
+      h2 {
+        font-family: var(--display);
+        font-size: clamp(34px, 4.8vw, 56px);
+        line-height: 1.08;
+        letter-spacing: -0.055em;
+        font-weight: 900;
+      }
+
+      h3 {
+        font-size: 20px;
+        line-height: 1.35;
+        letter-spacing: -0.02em;
+        font-weight: 800;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      button,
+      input,
+      select,
+      textarea {
+        font: inherit;
+      }
+
+      button {
+        min-height: 44px;
+        border: 0;
+        border-radius: var(--radius);
+        padding: 10px 18px;
+        cursor: pointer;
+        white-space: nowrap;
+        letter-spacing: 0.02em;
+      }
+
+      .appbar {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        background: rgba(255, 255, 255, 0.16);
+        border-bottom: 1px solid var(--line-soft);
+        -webkit-backdrop-filter: blur(24px) saturate(140%);
+        backdrop-filter: blur(24px) saturate(140%);
+        animation: appbarDrop 680ms cubic-bezier(0.22, 1, 0.36, 1) both;
+      }
+
+      .appbar-inner {
+        max-width: var(--max);
+        min-height: 72px;
+        margin: 0 auto;
+        padding: 0 22px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 22px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        text-decoration: none;
+      }
+
+      .mark {
+        width: 36px;
+        height: 36px;
+        border-radius: 999px;
+        display: grid;
+        place-items: center;
+        color: var(--dark);
+        background: rgba(255, 255, 255, 0.86);
+        font-weight: 900;
+        transition: transform 180ms ease, background 180ms ease;
+      }
+
+      .brand .mark {
+        display: grid;
+        color: var(--dark);
+        font-size: 16px;
+        line-height: 1;
+      }
+
+      .brand strong {
+        display: block;
+        font-size: 19px;
+        letter-spacing: -0.02em;
+      }
+
+      .brand span {
+        display: block;
+        color: var(--ink-soft);
+        font-size: 11.5px;
+      }
+
+      .nav {
+        display: flex;
+        align-items: center;
+        gap: 22px;
+      }
+
+      .nav a {
+        color: var(--ink);
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 13px;
+        letter-spacing: 0.04em;
+        position: relative;
+        transition: opacity 180ms ease, transform 180ms ease;
+      }
+
+      .nav a::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: -8px;
+        height: 1px;
+        background: rgba(255, 255, 255, 0.78);
+        transform: scaleX(0);
+        transform-origin: center;
+        transition: transform 180ms ease;
+      }
+
+      .brand:hover .mark,
+      .nav a:hover {
+        transform: translateY(-1px);
+      }
+
+      .nav a:hover::after {
+        transform: scaleX(1);
+      }
+
+      .nav .test-link {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 10px 18px;
+      }
+
+      .hero {
+        position: relative;
+        min-height: calc(100svh - 72px);
+        display: grid;
+        place-items: center;
+        text-align: center;
+        padding: clamp(82px, 12vh, 132px) 22px clamp(52px, 8vh, 88px);
+        overflow: hidden;
+        isolation: isolate;
+      }
+
+      .hero::before,
+      .hero::after {
+        content: "";
+        position: absolute;
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      .hero::before {
+        width: min(62vw, 720px);
+        aspect-ratio: 1;
+        top: 4%;
+        left: 50%;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.12), transparent 62%);
+        transform: translateX(-50%);
+        animation: softPulse 8s ease-in-out infinite;
+      }
+
+      .hero::after {
+        width: min(74vw, 860px);
+        height: 240px;
+        left: 17%;
+        bottom: 10%;
+        border-radius: 999px;
+        background: radial-gradient(ellipse, rgba(255, 255, 255, 0.22), transparent 68%);
+        filter: blur(30px);
+        animation: cloudDrift 13s ease-in-out infinite alternate;
+      }
+
+      .hero-inner {
+        position: relative;
+        z-index: 1;
+        width: min(100%, 980px);
+        display: grid;
+        justify-items: center;
+      }
+
+      .hero-inner > * {
+        opacity: 0;
+        animation: heroRise 820ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      }
+
+      .hero-inner h1 {
+        animation-name: titleIn;
+        animation-duration: 980ms;
+        animation-delay: 150ms;
+      }
+
+      .hero-kicker {
+        animation-delay: 40ms;
+      }
+
+      .hero-copy {
+        animation-delay: 300ms;
+      }
+
+      .notify-form {
+        animation-delay: 450ms;
+      }
+
+      .message {
+        animation-delay: 560ms;
+      }
+
+      .hero-kicker {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 28px;
+        color: var(--ink);
+        font-size: 16px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+      }
+
+      .hero-kicker::before,
+      .hero-kicker::after {
+        content: "";
+        width: 42px;
+        height: 1px;
+        background: rgba(255, 255, 255, 0.62);
+        transform: scaleX(0);
+        animation: lineReveal 720ms cubic-bezier(0.22, 1, 0.36, 1) 420ms forwards;
+      }
+
+      .hero-copy {
+        max-width: 620px;
+        margin-top: 28px;
+        color: var(--ink-soft);
+        font-size: clamp(17px, 2vw, 21px);
+        font-weight: 500;
+        line-height: 1.75;
+      }
+
+      .notify-form {
+        width: min(100%, 610px);
+        margin-top: 44px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 10px;
+      }
+
+      .notify-form input {
+        width: 100%;
+        min-height: 56px;
+        border: 1px solid rgba(255, 255, 255, 0.36);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.62);
+        color: var(--dark);
+        padding: 14px 22px;
+        outline: none;
+        transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+      }
+
+      .notify-form input::placeholder {
+        color: rgba(19, 34, 53, 0.72);
+      }
+
+      .notify-form input:focus {
+        border-color: #ffffff;
+        box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.2);
+      }
+
+      .primary {
+        background: var(--button);
+        color: #ffffff;
+        font-weight: 800;
+        border-radius: 999px;
+        padding-inline: 24px;
+        box-shadow: 0 18px 34px rgba(19, 34, 53, 0.18);
+        transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+      }
+
+      .primary:hover {
+        transform: translateY(-2px);
+        background: #213a66;
+        box-shadow: 0 22px 42px rgba(19, 34, 53, 0.26);
+      }
+
+      .primary:active {
+        transform: translateY(0);
+      }
+
+      .message {
+        min-height: 26px;
+        margin-top: 16px;
+        color: #ffffff;
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+      }
+
+      .glass {
+        border: 1px solid var(--line);
+        border-radius: var(--radius-lg);
+        background: linear-gradient(145deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.1));
+        box-shadow: var(--shadow);
+        -webkit-backdrop-filter: blur(26px) saturate(130%);
+        backdrop-filter: blur(26px) saturate(130%);
+        transition: transform 220ms ease, border-color 220ms ease, background 220ms ease, box-shadow 220ms ease;
+      }
+
+      .glass:hover {
+        transform: translateY(-4px);
+        border-color: rgba(255, 255, 255, 0.5);
+        background: linear-gradient(145deg, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0.14));
+        box-shadow: 0 30px 90px rgba(22, 35, 54, 0.34);
+      }
+
+      .section {
+        max-width: var(--max);
+        margin: 0 auto;
+        padding: clamp(82px, 10vw, 126px) 24px;
+      }
+
+      .section-head {
+        max-width: 820px;
+        margin-bottom: 34px;
+      }
+
+      .section-head p,
+      .card p,
+      .result-card span,
+      .vendor p,
+      .risk p,
+      .step-card p,
+      .footer {
+        color: var(--ink-soft);
+        font-size: 14px;
+      }
+
+      .section-head p {
+        max-width: 60ch;
+        margin-top: 16px;
+        font-size: 17px;
+        line-height: 1.72;
+      }
+
+      .card-grid,
+      .market-grid,
+      .flow-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .card,
+      .market-card,
+      .step-card,
+      .result-card,
+      .vendor,
+      .risk {
+        border: 1px solid var(--line-soft);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.11);
+        padding: 20px;
+      }
+
+      .card strong,
+      .market-card strong {
+        display: block;
+        margin-bottom: 10px;
+        font-size: 21px;
+        line-height: 1.35;
+        letter-spacing: -0.02em;
+      }
+
+      .market-card span {
+        display: block;
+        color: var(--ink-soft);
+        font-size: 14px;
+        line-height: 1.7;
+      }
+
+      .step-num {
+        width: 30px;
+        height: 30px;
+        border-radius: 999px;
+        display: grid;
+        place-items: center;
+        margin-bottom: 13px;
+        background: #ffffff;
+        color: var(--dark);
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .test-section {
+        background: rgba(17, 32, 50, 0.34);
+        border-top: 1px solid var(--line-soft);
+      }
+
+      .test-grid {
+        max-width: var(--max);
+        margin: 0 auto;
+        padding: clamp(82px, 10vw, 126px) 24px clamp(92px, 11vw, 138px);
+        display: grid;
+        grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
+        gap: 18px;
+        align-items: start;
+      }
+
+      .test-copy {
+        grid-column: 1 / -1;
+        max-width: 760px;
+      }
+
+      .test-copy p {
+        margin-top: 10px;
+        color: var(--ink-soft);
+        font-size: 16px;
+      }
+
+      form {
+        display: grid;
+        gap: 10px;
+      }
+
+      label {
+        display: grid;
+        gap: 6px;
+        color: var(--ink-soft);
+        font-size: 13px;
+      }
+
+      textarea,
+      select,
+      .test-grid input {
+        width: 100%;
+        min-height: 42px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: rgba(255, 255, 255, 0.18);
+        color: #ffffff;
+        padding: 10px 12px;
+        outline: none;
+      }
+
+      textarea {
+        min-height: 112px;
+        resize: vertical;
+      }
+
+      select option {
+        color: #132235;
+      }
+
+      .two-col,
+      .check-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      .check {
+        min-height: 38px;
+        border: 1px solid var(--line-soft);
+        border-radius: var(--radius);
+        background: rgba(255, 255, 255, 0.12);
+        padding: 8px 10px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .check input {
+        width: auto;
+        min-height: auto;
+      }
+
+      .result-head,
+      .vendor-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        width: fit-content;
+        min-height: 24px;
+        border-radius: 999px;
+        padding: 4px 10px;
+        background: rgba(255, 255, 255, 0.2);
+        color: #ffffff;
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .result-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+        margin: 12px 0;
+      }
+
+      .result-card strong {
+        display: block;
+        margin-top: 4px;
+        font-size: 18px;
+      }
+
+      .tabs {
+        display: flex;
+        gap: 6px;
+        overflow-x: auto;
+        border-bottom: 1px solid var(--line-soft);
+        margin: 12px 0;
+      }
+
+      .tab {
+        min-height: 38px;
+        color: rgba(255, 255, 255, 0.7);
+        background: transparent;
+        border-bottom: 2px solid transparent;
+        border-radius: 0;
+        transition: color 180ms ease, border-color 180ms ease, transform 180ms ease;
+      }
+
+      .tab:hover {
+        color: #ffffff;
+        transform: translateY(-1px);
+      }
+
+      .tab.active {
+        color: #ffffff;
+        border-bottom-color: #ffffff;
+      }
+
+      .tab-panel {
+        display: grid;
+        gap: 10px;
+        animation: panelFade 260ms ease both;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      .vendor-score {
+        color: #ffffff;
+        font-weight: 900;
+        white-space: nowrap;
+      }
+
+      .tag-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 8px;
+      }
+
+      .risk {
+        border-left: 4px solid var(--line);
+      }
+
+      .risk.green {
+        border-left-color: var(--success);
+      }
+
+      .risk.yellow {
+        border-left-color: var(--warn);
+      }
+
+      .risk.red {
+        border-left-color: var(--danger);
+      }
+
+      .process-banner {
+        margin: 14px 0 10px;
+        border: 1px solid var(--line-soft);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.12);
+        padding: 15px 16px;
+      }
+
+      .process-banner-head,
+      .vendor-actions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .process-banner strong,
+      .risk strong {
+        display: block;
+        margin-top: 8px;
+        font-size: 18px;
+      }
+
+      .process-banner p,
+      .result-card p,
+      .vendor p,
+      .risk small,
+      .inline-note,
+      .list-item {
+        color: var(--ink-soft);
+      }
+
+      .process-banner p,
+      .result-card p,
+      .vendor p,
+      .risk p {
+        margin-top: 8px;
+      }
+
+      .risk small {
+        display: block;
+        margin-top: 8px;
+        font-size: 13px;
+        line-height: 1.65;
+      }
+
+      .meta-row,
+      .list-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 10px;
+      }
+
+      .price-list,
+      .check-list {
+        list-style: none;
+        margin: 12px 0 0;
+        padding: 0;
+        display: grid;
+        gap: 8px;
+      }
+
+      .list-item {
+        border-top: 1px solid var(--line-soft);
+        padding-top: 8px;
+        font-size: 14px;
+      }
+
+      .vendor-link {
+        display: inline-flex;
+        align-items: center;
+        min-height: 38px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 8px 12px;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      .flow-message {
+        min-height: 24px;
+        margin-top: 12px;
+        color: #ffffff;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .footer {
+        max-width: var(--max);
+        margin: 0 auto;
+        padding: 26px 22px 40px;
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        border-top: 1px solid var(--line-soft);
+      }
+
+      .reveal {
+        opacity: 0;
+        transform: translate3d(0, 34px, 0) scale(0.985);
+        filter: blur(8px);
+        transition:
+          opacity 760ms cubic-bezier(0.22, 1, 0.36, 1),
+          transform 760ms cubic-bezier(0.22, 1, 0.36, 1),
+          filter 760ms cubic-bezier(0.22, 1, 0.36, 1);
+        transition-delay: var(--delay, 0ms);
+        will-change: opacity, transform, filter;
+      }
+
+      .reveal.is-visible {
+        opacity: 1;
+        transform: translate3d(0, 0, 0) scale(1);
+        filter: blur(0);
+      }
+
+      .result-pulse {
+        animation: resultGlow 620ms ease both;
+      }
+
+      @media (max-width: 920px) {
+        h1 {
+          font-size: clamp(62px, 13vw, 96px);
+        }
+
+        .card-grid,
+        .market-grid,
+        .flow-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .test-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 680px) {
+        h1 {
+          font-size: clamp(54px, 17vw, 72px);
+          letter-spacing: -0.065em;
+        }
+
+        h2 {
+          font-size: 32px;
+        }
+
+        .appbar-inner {
+          min-height: auto;
+          padding: 14px 18px;
+          display: grid;
+        }
+
+        .nav {
+          width: 100%;
+          overflow-x: auto;
+          gap: 14px;
+          padding-bottom: 2px;
+        }
+
+        .hero {
+          min-height: auto;
+          padding-top: 82px;
+        }
+
+        .hero-copy {
+          font-size: 16px;
+        }
+
+        .notify-form,
+        .card-grid,
+        .market-grid,
+        .flow-grid,
+        .two-col,
+        .check-grid,
+        .result-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .hero-kicker {
+          gap: 10px;
+          font-size: 13px;
+        }
+
+        .hero-kicker::before,
+        .hero-kicker::after {
+          width: 26px;
+        }
+
+        .footer {
+          display: grid;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          scroll-behavior: auto !important;
+          animation-duration: 0.01ms !important;
+          transition-duration: 0.01ms !important;
+        }
+
+        .hero-inner > *,
+        .reveal {
+          opacity: 1 !important;
+          transform: none !important;
+          filter: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="appbar">
+      <div class="appbar-inner">
+        <a class="brand" href="#home">
+          <span class="mark">F</span>
+          <span>
+            <strong>FoodFlow</strong>
+            <span>식품 제조 발주 준비</span>
+          </span>
+        </a>
+        <nav class="nav" aria-label="주요 메뉴">
+          <a href="#solution">소개</a>
+          <a href="#market">시장</a>
+          <a href="#flow">흐름</a>
+          <a class="test-link" href="#test-lab">테스트</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="home">
+      <section class="hero">
+        <div class="hero-inner">
+          <p class="hero-kicker">식품 제조 발주 플랫폼을 준비 중입니다</p>
+          <h1>FoodFlow</h1>
+          <p class="hero-copy">제품 아이디어를 사양서, 규제 체크, 공장 후보, 샘플 요청 조건으로 연결하는 한국형 식품 제조 실행 워크룸입니다.</p>
+          <form class="notify-form" id="notifyForm">
+            <input id="notifyEmail" type="email" placeholder="이메일 주소를 입력하세요" aria-label="이메일 주소" />
+            <button class="primary" type="submit">알림 받기</button>
+          </form>
+          <div class="message" id="notifyMessage"></div>
+        </div>
+      </section>
+
+      <section class="section" id="solution">
+        <div class="section-head">
+          <h2>공장 검색 이전에 발주안을 먼저 정리합니다.</h2>
+          <p>FoodFlow는 단순 업체 목록보다 제품화 요청, 사양화, 표시·인증 검토, 후보 공장 비교, 샘플 문의 흐름을 한 번에 정리하는 데 집중합니다.</p>
+        </div>
+        <div class="card-grid">
+          <article class="card glass">
+            <strong>요청 정리</strong>
+            <p>아이디어, 제품군, 수량, 포장, 예산, 판매 채널을 발주 가능한 요청서로 바꿉니다.</p>
+          </article>
+          <article class="card glass">
+            <strong>사양화</strong>
+            <p>제품 컨셉, 원료 방향, 공정 단계, 확인 질문을 제품 기획안 형태로 정리합니다.</p>
+          </article>
+          <article class="card glass">
+            <strong>사전 검토</strong>
+            <p>표시 문구, 알레르기, 인증, 시험성적서 필요 여부를 먼저 분리합니다.</p>
+          </article>
+          <article class="card glass">
+            <strong>후보 비교</strong>
+            <p>최소 수량, 포장 대응, 샘플 가능 여부, 리드타임 기준으로 공장을 비교합니다.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" id="market">
+        <div class="section-head">
+          <h2>특정 식품군이 아니라 발주 흐름 전체를 봅니다.</h2>
+          <p>식품 제조 시장 안에서 반복적으로 발생하는 요청 정리, 공장 비교, 샘플 문의, 재발주 흐름을 디지털화합니다.</p>
+        </div>
+        <div class="market-grid">
+          <article class="market-card glass">
+            <strong>요청이 먼저 복잡합니다</strong>
+            <span>아이디어는 짧지만 실제 발주는 원료, 공정, 포장, 표시 문구, 수량 조건으로 쪼개져야 합니다.</span>
+          </article>
+          <article class="market-card glass">
+            <strong>공장은 목록만으로 고르기 어렵습니다</strong>
+            <span>가능 공정, 최소 수량, 샘플 대응, 납기, 인증 범위를 같은 기준으로 비교해야 합니다.</span>
+          </article>
+          <article class="market-card glass">
+            <strong>샘플 이후 정보가 흩어집니다</strong>
+            <span>견적, 수정 요청, 보류 사유가 남지 않으면 다음 발주가 다시 수작업으로 돌아갑니다.</span>
+          </article>
+          <article class="market-card glass">
+            <strong>반복 발주가 데이터가 됩니다</strong>
+            <span>요청서와 결과를 같은 구조로 남겨야 다음 매칭과 재발주 품질을 높일 수 있습니다.</span>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" id="flow">
+        <div class="section-head">
+          <h2>검증의 기준은 소개 수가 아니라 비교 품질입니다.</h2>
+          <p>공급사와 요청서, 샘플 이후 상태를 같은 필드로 묶어야 반복 발주와 재매칭 품질이 올라갑니다.</p>
+        </div>
+        <div class="flow-grid">
+          <article class="step-card glass">
+            <div class="step-num">1</div>
+            <h3>공급사 정리</h3>
+            <p>공정, 포장, 인증, 최소 수량, 샘플 가능 여부, 리드타임, 출처를 표준화합니다.</p>
+          </article>
+          <article class="step-card glass">
+            <div class="step-num">2</div>
+            <h3>요청서 축적</h3>
+            <p>소량 테스트, 표준 사양 비교, 반복 발주 요청을 같은 구조로 저장합니다.</p>
+          </article>
+          <article class="step-card glass">
+            <div class="step-num">3</div>
+            <h3>상태 추적</h3>
+            <p>샘플 요청, 견적, 초도 생산, 보류 사유를 운영 데이터로 남깁니다.</p>
+          </article>
+          <article class="step-card glass">
+            <div class="step-num">4</div>
+            <h3>추천 고도화</h3>
+            <p>추천 사유와 확인 질문의 일관성을 검증해 매칭 품질을 높입니다.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="test-section" id="test-lab">
+        <div class="test-grid">
+          <div class="test-copy">
+            <span class="badge">테스트</span>
+            <h2 style="margin-top: 12px;">간단한 발주안을 즉시 시뮬레이션합니다.</h2>
+            <p>제품군, 포장, 수량, 예산 조건이 사양, 실제 기업 페이지 후보, 공정, 가격 근거, 리스크로 어떻게 분기되는지 확인하는 랜딩용 실행 모델입니다.</p>
+          </div>
+
+          <section class="glass" style="padding: 18px;">
+            <form id="flowForm">
+              <label>
+                제품 아이디어
+                <textarea id="idea">프랜차이즈용 저당 매운 소스를 파우치로 표준화하고 싶다. 초도 테스트 후 반복 발주 가능성을 보고 싶다.</textarea>
+              </label>
+              <div class="two-col">
+                <label>
+                  제품군
+                  <select id="category">
+                    <option value="sauce">소스/양념</option>
+                    <option value="powder">분말/스틱</option>
+                    <option value="meal">간편식/밀키트</option>
+                    <option value="snack">건강간식</option>
+                    <option value="drink">병/캔 음료</option>
+                  </select>
+                </label>
+                <label>
+                  포장
+                  <select id="packageType">
+                    <option value="pouch">파우치</option>
+                    <option value="stick">스틱</option>
+                    <option value="cup">컵/용기</option>
+                    <option value="tray">트레이</option>
+                    <option value="bottle">병/캔</option>
+                  </select>
+                </label>
+              </div>
+              <div class="two-col">
+                <label>
+                  초도 수량
+                  <input id="qty" type="number" min="100" step="100" value="4000" />
+                </label>
+                <label>
+                  보유 예산
+                  <input id="budget" type="number" min="0" step="100000" value="12000000" />
+                </label>
+              </div>
+              <div class="check-grid">
+                <label class="check"><input type="checkbox" name="claim" value="lowSugar" checked /> 저당</label>
+                <label class="check"><input type="checkbox" name="claim" value="lowSodium" checked /> 나트륨 감소</label>
+                <label class="check"><input type="checkbox" name="claim" value="protein" /> 고단백</label>
+                <label class="check"><input type="checkbox" name="claim" value="vegan" /> 비건</label>
+              </div>
+              <button class="primary" type="submit">미니 모델 실행</button>
+            </form>
+          </section>
+
+          <section class="glass" style="padding: 18px;">
+            <div class="result-head">
+              <div>
+                <span class="badge" id="decisionBadge">검토 가능</span>
+                <h3 id="resultTitle" style="margin-top: 8px;">소스/양념 발주안 초안</h3>
+              </div>
+              <span class="badge" id="fitPill">예산 검토중</span>
+            </div>
+
+            <div class="result-grid">
+              <div class="result-card">
+                <span>예상 공급가</span>
+                <strong id="supplyCost">-</strong>
+              </div>
+              <div class="result-card">
+                <span>샘플/시험비</span>
+                <strong id="sampleCost">-</strong>
+              </div>
+              <div class="result-card">
+                <span>중개 수수료</span>
+                <strong id="brokerage">-</strong>
+              </div>
+              <div class="result-card">
+                <span>총 예상액</span>
+                <strong id="totalCost">-</strong>
+              </div>
+            </div>
+
+            <div class="process-banner hidden" id="processBanner"></div>
+
+            <div class="tabs" role="tablist">
+              <button class="tab active" type="button" data-tab="spec">사양</button>
+              <button class="tab" type="button" data-tab="vendors">후보</button>
+              <button class="tab" type="button" data-tab="risk">리스크</button>
+              <button class="tab" type="button" data-tab="price">예상가</button>
+              <button class="tab" type="button" data-tab="steps">실행</button>
+            </div>
+
+            <div class="tab-panel" id="panel-spec"></div>
+            <div class="tab-panel hidden" id="panel-vendors"></div>
+            <div class="tab-panel hidden" id="panel-risk"></div>
+            <div class="tab-panel hidden" id="panel-price"></div>
+            <div class="tab-panel hidden" id="panel-steps"></div>
+            <div class="flow-message" id="flowMessage"></div>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span>FoodFlow · 식품 제조 발주 준비</span>
+      <span>문의 채널 준비 중</span>
+    </footer>
+
+    <script src="./assets/simulator.js"></script>
+  </body>
+</html>

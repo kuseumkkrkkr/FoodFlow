@@ -1,0 +1,20 @@
+{
+  "brand": "FoodFlow",
+  "artifact": "app-referenced landing page",
+  "design_reference": [
+    "app_cbt/static/styles.css",
+    "app_cbt/static/index.html",
+    "app_flutter/lib/widgets/common.dart"
+  ],
+  "positioning": "식품 아이디어를 제품 사양, 규제 스크리닝, 공장 비교, 샘플 실행, 반복 발주 운영으로 잇는 한국형 Food OEM/ODM 실행 워크룸",
+  "interactive_model": {
+    "name": "미니 발주 실험 모델",
+    "runs_in_browser": true,
+    "inputs": ["제품 아이디어", "제품군", "포장", "초도 수량", "보유 예산", "검토 문구"],
+    "outputs": ["발주안 초안", "예상 금액", "후보 업체", "리스크 메모", "실행 단계"]
+  },
+  "source_notes": [
+    "40_PSST_Business_Plan_PSS.md",
+    "market/Food_OEM_ODM_Brokerage_Competitor_Map.md"
+  ]
+}
