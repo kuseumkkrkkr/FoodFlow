@@ -1,6 +1,9 @@
 (function () {
   const formatter = new Intl.NumberFormat("ko-KR");
   const LOCAL_API_BASE = "http://127.0.0.1:8002/";
+  const USER_STORAGE_KEY = "foodflow-user-id";
+  const JOB_POLL_INTERVAL_MS = 1500;
+  const JOB_POLL_TIMEOUT_MS = 90000;
   const $ = selector => document.querySelector(selector);
   const $$ = selector => [...document.querySelectorAll(selector)];
 
@@ -59,12 +62,38 @@
     return (apiBase() || "미설정").replace(/\/$/, "");
   }
 
+  function createUserId() {
+    if (window.crypto?.randomUUID) {
+      return `ff-${window.crypto.randomUUID().replaceAll("-", "")}`;
+    }
+    return `ff-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 12)}`;
+  }
+
+  function currentUserId() {
+    const stored = window.localStorage?.getItem(USER_STORAGE_KEY) || "";
+    if (stored) return stored;
+    const created = createUserId();
+    window.localStorage?.setItem(USER_STORAGE_KEY, created);
+    return created;
+  }
+
+  function sleep(ms) {
+    return new Promise(resolve => window.setTimeout(resolve, ms));
+  }
+
+  function jobMessage(status) {
+    if (status === "queued") return "생성 요청을 접수했습니다. 사용자별 작업 큐에서 대기 중입니다.";
+    if (status === "running") return "발주안 초안과 매칭 근거를 생성 중입니다.";
+    return "결과를 불러오는 중입니다.";
+  }
+
   function selectedClaims() {
     return $$("input[name='claim']:checked").map(input => input.value);
   }
 
   function currentPayload() {
     return {
+      user_id: currentUserId(),
       idea: $("#idea")?.value?.trim() || "",
       category: $("#category")?.value || "sauce",
       package_type: $("#packageType")?.value || "pouch",
@@ -264,6 +293,47 @@
     pulseResult();
   }
 
+  async function createSimulationJob(payload) {
+    const response = await fetch(apiUrl("api/simulate"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await response.json();
+    if (response.status === 200 && data?.title) {
+      return { status: "completed", result: data, user_id: payload.user_id };
+    }
+    if (response.status !== 202) {
+      throw new Error(data?.error || `HTTP ${response.status}`);
+    }
+    return data;
+  }
+
+  async function waitForSimulationJob(job, message) {
+    const deadline = Date.now() + JOB_POLL_TIMEOUT_MS;
+    const userId = job.user_id || currentUserId();
+    while (Date.now() < deadline) {
+      if (message) {
+        message.classList.remove("hidden");
+        message.textContent = jobMessage(job.status);
+      }
+      const statusUrl = new URL(apiUrl(`api/simulate/${job.job_id}`));
+      statusUrl.searchParams.set("user_id", userId);
+      const response = await fetch(statusUrl.toString());
+      const data = await response.json();
+      if (![200, 202].includes(response.status)) {
+        throw new Error(data?.error || `HTTP ${response.status}`);
+      }
+      if (data.status === "completed") return data.result;
+      if (data.status === "failed") {
+        throw new Error(data.error || "생성 중 오류가 발생했습니다.");
+      }
+      job.status = data.status || "queued";
+      await sleep(JOB_POLL_INTERVAL_MS);
+    }
+    throw new Error("생성 시간이 초과되었습니다. 잠시 후 다시 시도하세요.");
+  }
+
   async function runModel() {
     const submitButton = $("#flowForm button[type='submit']");
     const message = $("#flowMessage");
@@ -277,13 +347,8 @@
       if (!targetUrl) {
         throw new Error("file:// 경로에서는 API 주소를 찾을 수 없습니다. http://127.0.0.1:8002 또는 로컬 서버 주소로 여세요.");
       }
-      const response = await fetch(targetUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(currentPayload()),
-      });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const data = await response.json();
+      const job = await createSimulationJob(currentPayload());
+      const data = job.status === "completed" ? job.result : await waitForSimulationJob(job, message);
       applyResult(data);
     } catch (error) {
       if (message) {

@@ -4,12 +4,16 @@ import csv
 import json
 import os
 import re
+import sqlite3
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timezone
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
+from uuid import uuid4
 
 from flask import Flask, abort, jsonify, request, send_from_directory
 
@@ -19,6 +23,14 @@ PAGE_DIR = BASE_DIR
 ASSET_DIR = BASE_DIR / "assets"
 DATA_DIR = BASE_DIR / "data"
 SEED_PATH = DATA_DIR / "korea_oem_odm_seed.csv"
+JOB_DB_PATH = DATA_DIR / "simulate_jobs.sqlite3"
+
+
+def env_positive_int(name: str, default: int) -> int:
+    try:
+        return max(1, int(os.getenv(name, str(default))))
+    except ValueError:
+        return default
 
 
 def load_dotenv(path: Path) -> None:
@@ -42,6 +54,7 @@ load_dotenv(BASE_DIR / ".env")
 SAM_BASE_URL = os.getenv("SAM_BASE_URL", "https://sam.soonsoon.ai").rstrip("/")
 SAM_API_KEY = os.getenv("SAM_API_KEY", "sam-25d2caf63494334fc56b40b93b09589b152026c501a7ab34")
 SAM_MODEL = os.getenv("SAM_MODEL", "az-deepseek-v4-flash")
+SIMULATE_MAX_WORKERS = env_positive_int("SIMULATE_MAX_WORKERS", 8)
 LOCAL_DEV_ORIGINS = {
     "http://127.0.0.1:3000",
     "http://127.0.0.1:5173",
@@ -50,6 +63,8 @@ LOCAL_DEV_ORIGINS = {
     "http://localhost:5173",
     "http://localhost:5500",
 }
+USER_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{8,80}$")
+STALE_JOB_ERROR = "서버 재시작으로 작업이 중단되었습니다. 다시 실행해 주세요."
 
 PACKAGE_LABELS = {
     "pouch": "파우치",
@@ -171,6 +186,167 @@ CATEGORY_META: dict[str, dict[str, Any]] = {
 }
 
 app = Flask(__name__, static_folder=None)
+SIMULATE_EXECUTOR = ThreadPoolExecutor(max_workers=SIMULATE_MAX_WORKERS, thread_name_prefix="simulate-job")
+
+
+def utc_now_text() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def open_job_db() -> sqlite3.Connection:
+    conn = sqlite3.connect(JOB_DB_PATH, timeout=30, check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def init_job_store() -> None:
+    JOB_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    now = utc_now_text()
+    with open_job_db() as conn:
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA synchronous=NORMAL")
+        conn.executescript(
+            """
+            CREATE TABLE IF NOT EXISTS simulate_jobs (
+                job_id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                status TEXT NOT NULL,
+                payload_json TEXT NOT NULL,
+                result_json TEXT,
+                error_text TEXT,
+                created_at TEXT NOT NULL,
+                started_at TEXT,
+                completed_at TEXT,
+                updated_at TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_simulate_jobs_user_created
+            ON simulate_jobs (user_id, created_at DESC);
+            CREATE INDEX IF NOT EXISTS idx_simulate_jobs_status_created
+            ON simulate_jobs (status, created_at DESC);
+            """
+        )
+        conn.execute(
+            """
+            UPDATE simulate_jobs
+            SET status = ?, error_text = ?, completed_at = ?, updated_at = ?
+            WHERE status IN ('queued', 'running')
+            """,
+            ("failed", STALE_JOB_ERROR, now, now),
+        )
+
+
+def normalize_user_id(value: Any) -> str:
+    user_id = str(value or "").strip()
+    return user_id if USER_ID_PATTERN.fullmatch(user_id) else ""
+
+
+def resolve_user_id(body: dict[str, Any]) -> str:
+    return normalize_user_id(body.get("user_id")) or f"ff-{uuid4().hex}"
+
+
+def create_simulation_job(user_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    job_id = uuid4().hex
+    now = utc_now_text()
+    with open_job_db() as conn:
+        conn.execute(
+            """
+            INSERT INTO simulate_jobs (job_id, user_id, status, payload_json, created_at, updated_at)
+            VALUES (?, ?, 'queued', ?, ?, ?)
+            """,
+            (job_id, user_id, json.dumps(payload, ensure_ascii=False), now, now),
+        )
+    try:
+        SIMULATE_EXECUTOR.submit(run_simulation_job, job_id)
+    except RuntimeError as exc:
+        mark_job_failed(job_id, f"{type(exc).__name__}: {exc}")
+    return {
+        "job_id": job_id,
+        "user_id": user_id,
+        "status": "queued",
+        "poll_url": f"/api/simulate/{job_id}?user_id={user_id}",
+    }
+
+
+def mark_job_failed(job_id: str, error_text: str) -> None:
+    now = utc_now_text()
+    with open_job_db() as conn:
+        conn.execute(
+            """
+            UPDATE simulate_jobs
+            SET status = 'failed', error_text = ?, completed_at = ?, updated_at = ?
+            WHERE job_id = ?
+            """,
+            (error_text[:500], now, now, job_id),
+        )
+
+
+def run_simulation_job(job_id: str) -> None:
+    payload_json = ""
+    started_at = utc_now_text()
+    with open_job_db() as conn:
+        row = conn.execute("SELECT payload_json FROM simulate_jobs WHERE job_id = ?", (job_id,)).fetchone()
+        if row is None:
+            return
+        updated = conn.execute(
+            """
+            UPDATE simulate_jobs
+            SET status = 'running', started_at = ?, updated_at = ?, error_text = NULL
+            WHERE job_id = ? AND status = 'queued'
+            """,
+            (started_at, started_at, job_id),
+        )
+        if updated.rowcount != 1:
+            return
+        payload_json = str(row["payload_json"])
+
+    try:
+        payload = json.loads(payload_json)
+        result = build_response(payload)
+    except Exception as exc:
+        mark_job_failed(job_id, f"{type(exc).__name__}: {exc}")
+        return
+
+    completed_at = utc_now_text()
+    with open_job_db() as conn:
+        conn.execute(
+            """
+            UPDATE simulate_jobs
+            SET status = 'completed', result_json = ?, completed_at = ?, updated_at = ?
+            WHERE job_id = ?
+            """,
+            (json.dumps(result, ensure_ascii=False), completed_at, completed_at, job_id),
+        )
+
+
+def get_simulation_job(job_id: str, user_id: str) -> sqlite3.Row | None:
+    with open_job_db() as conn:
+        return conn.execute(
+            """
+            SELECT job_id, user_id, status, result_json, error_text, created_at, started_at, completed_at
+            FROM simulate_jobs
+            WHERE job_id = ? AND user_id = ?
+            """,
+            (job_id, user_id),
+        ).fetchone()
+
+
+def serialize_simulation_job(row: sqlite3.Row) -> dict[str, Any]:
+    payload = {
+        "job_id": str(row["job_id"]),
+        "user_id": str(row["user_id"]),
+        "status": str(row["status"]),
+        "created_at": row["created_at"],
+        "started_at": row["started_at"],
+        "completed_at": row["completed_at"],
+    }
+    if row["status"] == "completed" and row["result_json"]:
+        payload["result"] = json.loads(str(row["result_json"]))
+    if row["status"] == "failed":
+        payload["error"] = str(row["error_text"] or "생성 중 오류가 발생했습니다.")
+    return payload
+
+
+init_job_store()
 
 
 def is_allowed_cors_origin(origin: str) -> bool:
@@ -189,7 +365,7 @@ def add_local_dev_cors(response):
     if request.path.startswith("/api/") and is_allowed_cors_origin(origin):
         response.headers["Access-Control-Allow-Origin"] = origin
         response.headers["Access-Control-Allow-Headers"] = "Content-Type"
-        response.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
         response.headers["Vary"] = "Origin"
     return response
 
@@ -731,6 +907,8 @@ def health():
             "seed_path": str(SEED_PATH),
             "factory_count": len(load_factories()),
             "sam_enabled": bool(SAM_API_KEY),
+            "job_store": str(JOB_DB_PATH),
+            "max_workers": SIMULATE_MAX_WORKERS,
         }
     )
 
@@ -747,8 +925,22 @@ def assets(filename: str):
 def simulate():
     if request.method == "OPTIONS":
         return ("", 204)
-    payload = parse_request_payload(request.get_json(silent=True) or {})
-    return jsonify(build_response(payload))
+    body = request.get_json(silent=True) or {}
+    payload = parse_request_payload(body)
+    user_id = resolve_user_id(body)
+    return jsonify(create_simulation_job(user_id, payload)), 202
+
+
+@app.get("/api/simulate/<job_id>")
+def simulate_job(job_id: str):
+    user_id = normalize_user_id(request.args.get("user_id"))
+    if not user_id:
+        abort(400, description="user_id is required")
+    row = get_simulation_job(job_id, user_id)
+    if row is None:
+        abort(404)
+    status_code = 200 if row["status"] in {"completed", "failed"} else 202
+    return jsonify(serialize_simulation_job(row)), status_code
 
 
 if __name__ == "__main__":
