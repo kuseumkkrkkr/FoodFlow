@@ -355,15 +355,12 @@ def is_allowed_cors_origin(origin: str) -> bool:
         return False
     if value in LOCAL_DEV_ORIGINS:
         return True
-    # Allow production domains
-    if "vercel.app" in value or "food-flow" in value:
-        return True
     parsed = urlparse(value)
-    return parsed.scheme in {"http", "https"} and parsed.hostname in {"localhost", "127.0.0.1"}
+    return parsed.scheme in {"http", "https"} and (parsed.hostname in {"localhost", "127.0.0.1"} or "vercel.app" in value or "food-flow" in value)
 
 
 @app.after_request
-def add_local_dev_cors(response):
+def add_cors(response):
     origin = request.headers.get("Origin", "")
     if request.path.startswith("/api/") and is_allowed_cors_origin(origin):
         response.headers["Access-Control-Allow-Origin"] = origin
