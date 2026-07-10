@@ -1,0 +1,32 @@
+{
+  "buildCommand": "pip install -r requirements.txt",
+  "devCommand": "python app.py",
+  "framework": "python",
+  "runtime": "python3.11",
+  "functions": {
+    "wsgi.py": {
+      "runtime": "python3.11"
+    }
+  },
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/wsgi.py"
+    },
+    {
+      "src": "/assets/(.*)",
+      "dest": "/wsgi.py"
+    },
+    {
+      "src": "/health",
+      "dest": "/wsgi.py"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/wsgi.py"
+    }
+  ],
+  "env": {
+    "PYTHONUNBUFFERED": "1"
+  }
+}
