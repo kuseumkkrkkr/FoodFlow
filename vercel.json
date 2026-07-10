@@ -1,4 +1,9 @@
 {
   "buildCommand": "pip install -r requirements.txt",
-  "devCommand": "python app.py"
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/wsgi.py"
+    }
+  ]
 }
