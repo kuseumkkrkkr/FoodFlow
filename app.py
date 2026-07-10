@@ -355,6 +355,9 @@ def is_allowed_cors_origin(origin: str) -> bool:
         return False
     if value in LOCAL_DEV_ORIGINS:
         return True
+    # Allow production domains
+    if "vercel.app" in value or "food-flow" in value:
+        return True
     parsed = urlparse(value)
     return parsed.scheme in {"http", "https"} and parsed.hostname in {"localhost", "127.0.0.1"}
 
@@ -944,4 +947,5 @@ def simulate_job(job_id: str):
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8002, debug=False)
+    port = int(os.getenv("PORT", 8002))
+    app.run(host="0.0.0.0", port=port, debug=False)
